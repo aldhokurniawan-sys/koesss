@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRIMSON // Luxury Offline Audio Player</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Cinzel for luxury accents -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for crisp icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        luxury: ['Cinzel', 'serif'],
+                    },
+                    colors: {
+                        obsidian: {
+                            950: '#050505',
+                            900: '#0a0a0c',
+                            800: '#121216',
+                            700: '#1c1c22',
+                        },
+                        crimson: {
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            800: '#991b1b',
+                            900: '#7f1d1d',
+                            glow: 'rgba(220, 38, 38, 0.45)'
+                        }
+                    },
+                    boxShadow: {
+                        'crimson-glow': '0 0 25px rgba(220, 38, 38, 0.35)',
+                        'crimson-sm': '0 0 10px rgba(220, 38, 38, 0.25)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-obsidian-950 text-gray-100 font-sans antialiased selection:bg-crimson-700 selection:text-white min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Background Ambient Glow -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-crimson-900/20 rounded-full blur-[120px]"></div>
+        <div class="absolute top-1/2 -right-40 w-96 h-96 bg-crimson-800/15 rounded-full blur-[150px]"></div>
+    </div>
+
+    <!-- Custom Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Main Container -->
+    <div class="relative z-10 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-36 flex-grow flex flex-col">
+        
+        <!-- Header -->
+        <header class="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-white/10">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-crimson-600 to-obsidian-900 border border-crimson-500/40 flex items-center justify-center shadow-crimson-sm">
+                    <i class="fa-solid fa-compact-disc text-white text-lg animate-spin" style="animation-duration: 8s;"></i>
+                </div>
+                <div>
+                    <h1 class="font-luxury text-xl sm:text-2xl font-bold tracking-wider bg-gradient-to-r from-white via-gray-200 to-crimson-400 bg-clip-text text-transparent">
+                        CRIMSON <span class="text-crimson-500 font-sans text-xs tracking-widest uppercase ml-1 px-2 py-0.5 rounded-full bg-crimson-950/80 border border-crimson-800/50">Offline</span>
+                    </h1>
+                    <p class="text-xs text-gray-400">Hi-Fi Local Audio Sanctuary</p>
+                </div>
+            </div>
+
+            <!-- Upload Button & Storage Info -->
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <div id="track-counter" class="text-xs text-gray-400 bg-obsidian-800/80 px-3 py-2 rounded-xl border border-white/5">
+                    0 Lagu Tersimpan
+                </div>
+                <label for="audio-upload" class="cursor-pointer group relative inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-crimson-700 to-crimson-600 hover:from-crimson-600 hover:to-crimson-500 rounded-xl shadow-crimson-sm hover:shadow-crimson-glow transition-all duration-300 border border-crimson-400/30">
+                    <i class="fa-solid fa-cloud-arrow-up group-hover:-translate-y-0.5 transition-transform"></i>
+                    <span>Unggah Musik</span>
+                    <input id="audio-upload" type="file" accept="audio/*" multiple class="hidden">
+                </label>
+            </div>
+        </header>
+
+        <!-- Main Workspace Grid -->
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8 flex-grow">
+            
+            <!-- Left Column: Now Playing Vinyl & Visualizer -->
+            <section class="lg:col-span-5 flex flex-col items-center justify-center bg-obsidian-900/60 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl">
+                <!-- Decorative Corner Accents -->
+                <div class="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-crimson-600/40 rounded-tl-3xl pointer-events-none"></div>
+                <div class="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-crimson-600/40 rounded-br-3xl pointer-events-none"></div>
+
+                <!-- Luxury Vinyl Disc Artwork -->
+                <div class="relative w-52 h-52 sm:w-64 sm:h-64 my-4 flex items-center justify-center">
+                    <!-- Outer Glow -->
+                    <div id="disc-glow" class="absolute inset-2 rounded-full bg-crimson-600/20 blur-xl transition-opacity duration-500 opacity-30"></div>
+                    
+                    <!-- Vinyl Record -->
+                    <div id="vinyl-disc" class="relative w-full h-full rounded-full bg-gradient-to-tr from-obsidian-950 via-obsidian-800 to-obsidian-900 border-4 border-obsidian-700 shadow-2xl flex items-center justify-center transition-transform duration-700">
+                        <!-- Vinyl Grooves (SVG) -->
+                        <svg class="absolute inset-0 w-full h-full opacity-30" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" stroke-width="0.3" stroke-dasharray="1 2"/>
+                            <circle cx="50" cy="50" r="38" fill="none" stroke="#ef4444" stroke-width="0.4"/>
+                            <circle cx="50" cy="50" r="32" fill="none" stroke="#ffffff" stroke-width="0.3"/>
+                            <circle cx="50" cy="50" r="26" fill="none" stroke="#ef4444" stroke-width="0.3" stroke-dasharray="2 1"/>
+                        </svg>
+                        
+                        <!-- Center Crimson Label -->
+                        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-crimson-600 via-crimson-800 to-obsidian-950 border-2 border-crimson-400/50 flex items-center justify-center shadow-inner z-10">
+                            <div class="w-4 h-4 rounded-full bg-obsidian-950 border border-white/20"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Track Metadata -->
+                <div class="text-center w-full mt-4 space-y-1">
+                    <span id="now-playing-badge" class="inline-block text-[10px] uppercase tracking-[0.2em] text-crimson-400 font-semibold mb-1">Siap Memutar</span>
+                    <h2 id="current-title" class="text-lg sm:text-xl font-bold text-white truncate px-2">Pilih atau Unggah Musik</h2>
+                    <p id="current-artist" class="text-xs sm:text-sm text-gray-400 truncate">Penyimpanan Offline Lokal</p>
+                </div>
+
+                <!-- Live Audio Visualizer Canvas -->
+                <div class="w-full h-16 mt-6 bg-obsidian-950/80 rounded-2xl border border-white/5 p-2 flex items-end justify-center overflow-hidden">
+                    <canvas id="visualizer" class="w-full h-full"></canvas>
+                </div>
+            </section>
+
+            <!-- Right Column: Offline Playlist & Dropzone -->
+            <section class="lg:col-span-7 flex flex-col bg-obsidian-900/60 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+                
+                <!-- Playlist Header & Search -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                    <div>
+                        <h3 class="text-base font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-list-ul text-crimson-500"></i>
+                            <span>Koleksi Musik Offline</span>
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Tersimpan otomatis di perangkat Anda</p>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="relative w-full sm:w-60">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                        <input type="text" id="search-input" placeholder="Cari judul lagu..." class="w-full bg-obsidian-950/90 border border-white/10 focus:border-crimson-500 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-gray-500 outline-none transition-colors">
+                    </div>
+                </div>
+
+                <!-- Drag & Drop Zone Banner -->
+                <div id="drop-zone" class="mt-4 border-2 border-dashed border-white/15 hover:border-crimson-500/60 bg-obsidian-950/40 rounded-2xl p-4 text-center transition-all cursor-pointer group">
+                    <p class="text-xs text-gray-400 group-hover:text-gray-200 transition-colors">
+                        <i class="fa-solid fa-file-audio text-crimson-500 mr-1.5"></i>
+                        Tarik & lepas file MP3, WAV, FLAC, atau M4A di sini untuk menyimpannya secara offline
+                    </p>
+                </div>
+
+                <!-- Song List Container -->
+                <div id="playlist-container" class="mt-4 flex-grow overflow-y-auto max-h-[360px] pr-1 space-y-2">
+                    <!-- Empty State (Default) -->
+                    <div id="empty-state" class="flex flex-col items-center justify-center py-12 text-center">
+                        <div class="w-14 h-14 rounded-2xl bg-obsidian-800 border border-white/5 flex items-center justify-center text-gray-500 mb-3">
+                            <i class="fa-solid fa-music text-xl"></i>
+                        </div>
+                        <p class="text-sm font-medium text-gray-300">Belum ada musik tersimpan</p>
+                        <p class="text-xs text-gray-500 mt-1 max-w-xs">Klik tombol "Unggah Musik" di atas untuk memasukkan lagu dari penyimpanan HP atau Laptop Anda.</p>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- Bottom Sticky Luxury Player Bar -->
+    <footer class="fixed bottom-0 inset-x-0 z-40 bg-obsidian-950/90 backdrop-blur-2xl border-t border-crimson-900/40 px-4 py-3 sm:py-4 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+        <div class="max-w-6xl mx-auto flex flex-col gap-2">
+            
+            <!-- Progress Bar Row -->
+            <div class="flex items-center gap-3 w-full">
+                <span id="time-current" class="text-[11px] font-mono text-gray-400 w-10 text-right">00:00</span>
+                <div class="relative flex-grow h-2 bg-obsidian-800 rounded-full cursor-pointer group flex items-center" id="progress-container">
+                    <div id="progress-bar" class="h-full bg-gradient-to-r from-crimson-800 via-crimson-600 to-crimson-400 rounded-full w-0 relative">
+                        <div class="w-3.5 h-3.5 bg-white border-2 border-crimson-500 rounded-full absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 shadow-crimson-glow scale-0 group-hover:scale-100 transition-transform"></div>
+                    </div>
+                </div>
+                <span id="time-total" class="text-[11px] font-mono text-gray-400 w-10">00:00</span>
+            </div>
+
+            <!-- Controls Row -->
+            <div class="flex items-center justify-between mt-1">
+                
+                <!-- Left: Mini Track Info (Hidden on very small screens) -->
+                <div class="hidden sm:flex items-center gap-3 w-1/3 min-w-0">
+                    <div class="w-10 h-10 rounded-lg bg-crimson-950 border border-crimson-800/50 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-wave-square text-crimson-500 text-sm"></i>
+                    </div>
+                    <div class="truncate">
+                        <p id="footer-title" class="text-xs font-semibold text-white truncate">Tidak ada lagu</p>
+                        <p class="text-[10px] text-crimson-400">Mode Offline Aktif</p>
+                    </div>
+                </div>
+
+                <!-- Center: Playback Buttons -->
+                <div class="flex items-center justify-center gap-4 sm:gap-6 w-full sm:w-1/3">
+                    <button id="btn-shuffle" title="Acak Lagu" class="text-gray-400 hover:text-white transition-colors p-2 text-xs sm:text-sm">
+                        <i class="fa-solid fa-shuffle"></i>
+                    </button>
+                    <button id="btn-prev" title="Sebelumnya" class="text-gray-300 hover:text-crimson-400 transition-colors p-2 text-base sm:text-lg">
+                        <i class="fa-solid fa-backward-step"></i>
+                    </button>
+                    <button id="btn-play" title="Putar / Jeda" class="w-12 h-12 rounded-full bg-gradient-to-tr from-crimson-700 to-crimson-500 hover:from-crimson-600 hover:to-crimson-400 text-white flex items-center justify-center shadow-crimson-glow transition-all active:scale-95 border border-crimson-300/30">
+                        <i id="play-icon" class="fa-solid fa-play text-base ml-0.5"></i>
+                    </button>
+                    <button id="btn-next" title="Selanjutnya" class="text-gray-300 hover:text-crimson-400 transition-colors p-2 text-base sm:text-lg">
+                        <i class="fa-solid fa-forward-step"></i>
+                    </button>
+                    <button id="btn-repeat" title="Ulangi Lagu" class="text-gray-400 hover:text-white transition-colors p-2 text-xs sm:text-sm">
+                        <i class="fa-solid fa-repeat"></i>
+                    </button>
+                </div>
+
+                <!-- Right: Volume Control -->
+                <div class="hidden sm:flex items-center justify-end gap-2.5 w-1/3">
+                    <button id="btn-mute" class="text-gray-400 hover:text-white text-xs p-1.5">
+                        <i id="volume-icon" class="fa-solid fa-volume-high"></i>
+                    </button>
+                    <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.85" class="w-24 accent-crimson-600 h-1.5 bg-obsidian-800 rounded-lg cursor-pointer">
+                </div>
+
+            </div>
+        </div>
+    </footer>
+
+    <!-- Hidden Audio Element -->
+    <audio id="audio-player" crossorigin="anonymous"></audio>
+
+    <script>
+        /**
+         * CRIMSON OFFLINE AUDIO ENGINE
+         * Menggunakan IndexedDB untuk menyimpan file biner audio secara permanen di browser
+         * sehingga tetap dapat diakses 100% secara offline.
+         */
+
+        // --- 1. KONFIGURASI INDEXEDDB ---
+        const DB_NAME = 'CrimsonOfflineMusicDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'songs';
+        let db;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onerror = (event) => {
+                    showToast('Gagal mengakses penyimpanan offline browser.', 'error');
+                    reject(event.target.error);
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    resolve(db);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    if (!database.objectStoreNames.contains(STORE_NAME)) {
+                        database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+            });
+        }
+
+        function saveSongToDB(songObj) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.add(songObj);
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function getAllSongsFromDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function deleteSongFromDB(id) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // --- 2. STATE APLIKASI ---
+        let songs = [];
+        let filteredSongs = [];
+        let currentIndex = -1;
+        let isPlaying = false;
+        let isShuffle = false;
+        let isRepeat = false;
+        let currentObjectURL = null;
+
+        // Web Audio API untuk Visualizer
+        let audioCtx;
+        let analyser;
+        let source;
+        let isVisualizerInitialized = false;
+
+        // --- 3. ELEMEN DOM ---
+        const audio = document.getElementById('audio-player');
+        const uploadInput = document.getElementById('audio-upload');
+        const dropZone = document.getElementById('drop-zone');
+        const playlistContainer = document.getElementById('playlist-container');
+        const emptyState = document.getElementById('empty-state');
+        const trackCounter = document.getElementById('track-counter');
+        const searchInput = document.getElementById('search-input');
+
+        // UI Now Playing
+        const vinylDisc = document.getElementById('vinyl-disc');
+        const discGlow = document.getElementById('disc-glow');
+        const currentTitle = document.getElementById('current-title');
+        const currentArtist = document.getElementById('current-artist');
+        const footerTitle = document.getElementById('footer-title');
+        const nowPlayingBadge = document.getElementById('now-playing-badge');
+
+        // Controls
+        const btnPlay = document.getElementById('btn-play');
+        const playIcon = document.getElementById('play-icon');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const btnShuffle = document.getElementById('btn-shuffle');
+        const btnRepeat = document.getElementById('btn-repeat');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const timeCurrent = document.getElementById('time-current');
+        const timeTotal = document.getElementById('time-total');
+        const volumeSlider = document.getElementById('volume-slider');
+        const btnMute = document.getElementById('btn-mute');
+        const volumeIcon = document.getElementById('volume-icon');
+
+        // --- 4. NOTIFIKASI TOAST KUSTOM ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const borderColor = type === 'error' ? 'border-red-500' : 'border-crimson-500';
+            const icon = type === 'error' ? 'fa-circle-exclamation text-red-400' : 'fa-circle-check text-crimson-400';
+
+            toast.className = `pointer-events-auto flex items-center gap-3 bg-obsidian-900/95 backdrop-blur-md border-l-4 ${borderColor} border-y border-r border-white/10 text-white px-4 py-3 rounded-xl shadow-2xl text-xs transition-all duration-300 transform translate-x-full opacity-0`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-sm"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // --- 5. PENANGANAN UNGGAH FILE ---
+        async function handleFiles(fileList) {
+            const files = Array.from(fileList).filter(file => file.type.startsWith('audio/'));
+            
+            if (files.length === 0) {
+                showToast('Harap pilih file audio yang valid (MP3, WAV, M4A, FLAC).', 'error');
+                return;
+            }
+
+            let addedCount = 0;
+            for (const file of files) {
+                // Bersihkan ekstensi file untuk judul
+                const cleanName = file.name.replace(/\.[^/.]+$/, "");
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+                const songData = {
+                    title: cleanName,
+                    artist: 'Koleksi Offline • ' + sizeMB,
+                    blob: file,
+                    addedAt: new Date().getTime()
+                };
+
+                try {
+                    await saveSongToDB(songData);
+                    addedCount++;
+                } catch (err) {
+                    console.error('Error saving file:', err);
+                }
+            }
+
+            if (addedCount > 0) {
+                showToast(`${addedCount} lagu berhasil disimpan untuk mode offline!`);
+                await refreshPlaylist();
+                if (currentIndex === -1 && songs.length > 0) {
+                    loadSong(0, false);
+                }
+            }
+        }
+
+        uploadInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+            e.target.value = ''; // Reset input
+        });
+
+        // Drag and Drop Events
+        dropZone.addEventListener('click', () => uploadInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-crimson-500', 'bg-crimson-950/20');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-crimson-500', 'bg-crimson-950/20');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-crimson-500', 'bg-crimson-950/20');
+            if (e.dataTransfer.files) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        // --- 6. RENDER & MANAJEMEN PLAYLIST ---
+        async function refreshPlaylist() {
+            songs = await getAllSongsFromDB();
+            const query = searchInput.value.toLowerCase().trim();
+            filteredSongs = songs.filter(s => s.title.toLowerCase().includes(query));
+            
+            trackCounter.textContent = `${songs.length} Lagu Tersimpan`;
+            renderPlaylist();
+        }
+
+        function renderPlaylist() {
+            // Hapus item lama kecuali emptyState
+            const items = playlistContainer.querySelectorAll('.song-item');
+            items.forEach(item => item.remove());
+
+            if (filteredSongs.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            filteredSongs.forEach((song) => {
+                // Cari index asli di array utama `songs`
+                const realIndex = songs.findIndex(s => s.id === song.id);
+                const isActive = realIndex === currentIndex;
+
+                const item = document.createElement('div');
+                item.className = `song-item group flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
+                    isActive 
+                    ? 'bg-gradient-to-r from-crimson-950/80 to-obsidian-800 border-crimson-500/60 shadow-crimson-sm' 
+                    : 'bg-obsidian-950/50 hover:bg-obsidian-800/80 border-white/5 hover:border-white/15'
+                }`;
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3.5 min-w-0 flex-grow" onclick="playSpecificSong(${realIndex})">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                            isActive ? 'bg-crimson-600 text-white' : 'bg-obsidian-800 text-gray-400 group-hover:text-crimson-400'
+                        }">
+                            <i class="fa-solid ${isActive && isPlaying ? 'fa-volume-high animate-pulse' : 'fa-music'} text-xs"></i>
+                        </div>
+                        <div class="min-w-0 flex-grow">
+                            <h4 class="text-xs sm:text-sm font-semibold truncate ${isActive ? 'text-crimson-400' : 'text-gray-200 group-hover:text-white'}">
+                                ${escapeHTML(song.title)}
+                            </h4>
+                            <p class="text-[11px] text-gray-500 truncate mt-0.5">${escapeHTML(song.artist)}</p>
+                        </div>
+                    </div>
+                    <button onclick="removeSong(event, ${song.id})" title="Hapus dari penyimpanan offline" class="p-2.5 text-gray-500 hover:text-red-500 opacity-70 sm:opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-white/5 ml-2">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                `;
+
+                playlistContainer.appendChild(item);
+            });
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        }
+
+        searchInput.addEventListener('input', refreshPlaylist);
+
+        window.playSpecificSong = function(index) {
+            if (currentIndex === index) {
+                togglePlay();
+            } else {
+                loadSong(index, true);
+            }
+        };
+
+        window.removeSong = async function(event, id) {
+            event.stopPropagation();
+            const deletingIndex = songs.findIndex(s => s.id === id);
+            
+            await deleteSongFromDB(id);
+            showToast('Lagu dihapus dari penyimpanan perangkat.');
+
+            if (deletingIndex === currentIndex) {
+                audio.pause();
+                isPlaying = false;
+                updatePlayStateUI();
+                currentIndex = -1;
+                currentTitle.textContent = 'Pilih atau Unggah Musik';
+                currentArtist.textContent = 'Penyimpanan Offline Lokal';
+                footerTitle.textContent = 'Tidak ada lagu';
+            } else if (deletingIndex < currentIndex) {
+                currentIndex--;
+            }
+
+            await refreshPlaylist();
+        };
+
+        // --- 7. KONTROL PEMUTARAN AUDIO ---
+        function loadSong(index, autoPlay = true) {
+            if (index < 0 || index >= songs.length) return;
+
+            currentIndex = index;
+            const song = songs[currentIndex];
+
+            if (currentObjectURL) {
+                URL.revokeObjectURL(currentObjectURL);
+            }
+
+            currentObjectURL = URL.createObjectURL(song.blob);
+            audio.src = currentObjectURL;
+
+            currentTitle.textContent = song.title;
+            currentArtist.textContent = song.artist;
+            footerTitle.textContent = song.title;
+            nowPlayingBadge.textContent = 'Sedang Diputar • Offline';
+
+            renderPlaylist();
+
+            if (autoPlay) {
+                playAudio();
+            }
+        }
+
+        function playAudio() {
+            if (currentIndex === -1 && songs.length > 0) {
+                loadSong(0, true);
+                return;
+            }
+            if (!audio.src) return;
+
+            initVisualizer();
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            audio.play().then(() => {
+                isPlaying = true;
+                updatePlayStateUI();
+                renderPlaylist();
+            }).catch(err => {
+                console.error('Playback failed:', err);
+            });
+        }
+
+        function pauseAudio() {
+            audio.pause();
+            isPlaying = false;
+            updatePlayStateUI();
+            renderPlaylist();
+        }
+
+        function togglePlay() {
+            if (isPlaying) {
+                pauseAudio();
+            } else {
+                playAudio();
+            }
+        }
+
+        function updatePlayStateUI() {
+            if (isPlaying) {
+                playIcon.classList.remove('fa-play', 'ml-0.5');
+                playIcon.classList.add('fa-pause');
+                vinylDisc.classList.add('animate-spin');
+                vinylDisc.style.animationDuration = '10s';
+                discGlow.classList.remove('opacity-30');
+                discGlow.classList.add('opacity-90');
+            } else {
+                playIcon.classList.remove('fa-pause');
+                playIcon.classList.add('fa-play', 'ml-0.5');
+                vinylDisc.classList.remove('animate-spin');
+                discGlow.classList.remove('opacity-90');
+                discGlow.classList.add('opacity-30');
+            }
+        }
+
+        function nextSong() {
+            if (songs.length === 0) return;
+            if (isShuffle) {
+                let nextIdx = Math.floor(Math.random() * songs.length);
+                if (songs.length > 1 && nextIdx === currentIndex) {
+                    nextIdx = (nextIdx + 1) % songs.length;
+                }
+                loadSong(nextIdx, true);
+            } else {
+                const nextIdx = (currentIndex + 1) % songs.length;
+                loadSong(nextIdx, true);
+            }
+        }
+
+        function prevSong() {
+            if (songs.length === 0) return;
+            if (audio.currentTime > 3) {
+                audio.currentTime = 0;
+                return;
+            }
+            const prevIdx = (currentIndex - 1 + songs.length) % songs.length;
+            loadSong(prevIdx, true);
+        }
+
+        // Event Listeners Kontrol
+        btnPlay.addEventListener('click', togglePlay);
+        btnNext.addEventListener('click', nextSong);
+        btnPrev.addEventListener('click', prevSong);
+
+        btnShuffle.addEventListener('click', () => {
+            isShuffle = !isShuffle;
+            btnShuffle.classList.toggle('text-crimson-500', isShuffle);
+            btnShuffle.classList.toggle('text-gray-400', !isShuffle);
+            showToast(isShuffle ? 'Mode Acak Aktif' : 'Mode Acak Nonaktif');
+        });
+
+        btnRepeat.addEventListener('click', () => {
+            isRepeat = !isRepeat;
+            audio.loop = isRepeat;
+            btnRepeat.classList.toggle('text-crimson-500', isRepeat);
+            btnRepeat.classList.toggle('text-gray-400', !isRepeat);
+            showToast(isRepeat ? 'Ulangi Satu Lagu Aktif' : 'Ulangi Lagu Nonaktif');
+        });
+
+        audio.addEventListener('ended', () => {
+            if (!isRepeat) {
+                nextSong();
+            }
+        });
+
+        // Progress Bar & Waktu
+        function formatTime(sec) {
+            if (isNaN(sec)) return '00:00';
+            const minutes = Math.floor(sec / 60);
+            const seconds = Math.floor(sec % 60);
+            return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                const percent = (audio.currentTime / audio.duration) * 100;
+                progressBar.style.width = `${percent}%`;
+                timeCurrent.textContent = formatTime(audio.currentTime);
+                timeTotal.textContent = formatTime(audio.duration);
+            }
+        });
+
+        progressContainer.addEventListener('click', (e) => {
+            if (!audio.duration) return;
+            const rect = progressContainer.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const width = rect.width;
+            audio.currentTime = (clickX / width) * audio.duration;
+        });
+
+        // Volume Control
+        volumeSlider.addEventListener('input', (e) => {
+            audio.volume = e.target.value;
+            updateVolumeIcon();
+        });
+
+        btnMute.addEventListener('click', () => {
+            audio.muted = !audio.muted;
+            updateVolumeIcon();
+        });
+
+        function updateVolumeIcon() {
+            if (audio.muted || audio.volume === 0) {
+                volumeIcon.className = 'fa-solid fa-volume-xmark text-crimson-500';
+            } else if (audio.volume < 0.5) {
+                volumeIcon.className = 'fa-solid fa-volume-low';
+            } else {
+                volumeIcon.className = 'fa-solid fa-volume-high';
+            }
+        }
+
+        // --- 8. REALTIME AUDIO VISUALIZER (CANVAS) ---
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function initVisualizer() {
+            if (isVisualizerInitialized) return;
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                analyser = audioCtx.createAnalyser();
+                source = audioCtx.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(audioCtx.destination);
+                analyser.fftSize = 64;
+                isVisualizerInitialized = true;
+                renderVisualizer();
+            } catch (e) {
+                console.warn('Web Audio API visualizer fallback:', e);
+            }
+        }
+
+        function renderVisualizer() {
+            requestAnimationFrame(renderVisualizer);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const bufferLength = analyser ? analyser.frequencyBinCount : 32;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            if (analyser && isPlaying) {
+                analyser.getByteFrequencyData(dataArray);
+            }
+
+            const barWidth = (canvas.width / bufferLength) * 1.4;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                // Buat gelombang minimal elegan saat diam
+                const val = isPlaying ? dataArray[i] : 12;
+                const barHeight = Math.max(4, (val / 255) * canvas.height);
+
+                const gradient = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - barHeight);
+                gradient.addColorStop(0, '#7f1d1d'); // Crimson 900
+                gradient.addColorStop(0.6, '#dc2626'); // Crimson 600
+                gradient.addColorStop(1, '#f87171'); // Crimson 400
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.roundRect(x, canvas.height - barHeight, barWidth - 3, barHeight, 4);
+                ctx.fill();
+
+                x += barWidth;
+            }
+        }
+
+        // --- 9. INISIALISASI SAAT HALAMAN DIMUAT ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            audio.volume = 0.85;
+            renderVisualizer();
+            await initDB();
+            await refreshPlaylist();
+            if (songs.length > 0) {
+                loadSong(0, false);
+            }
+        });
+    </script>
+</body>
+</html>
